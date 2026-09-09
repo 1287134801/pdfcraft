@@ -729,10 +729,17 @@ export async function executeNode(
             }
 
             case 'ocr-pdf': {
-                if (files.length === 0) throw new Error('No input file');
+                if (files.length === 0) throw new Error('No input file provided for OCR');
                 const processor = new OCRProcessor();
+                const rawLangs = settings.languages || settings.language || 'eng';
+                const languages = Array.isArray(rawLangs)
+                    ? (rawLangs as any)
+                    : String(rawLangs).split('+').map((s: string) => s.trim());
                 const options = {
-                    language: String(settings.language || 'eng'),
+                    languages,
+                    language: Array.isArray(rawLangs) ? rawLangs.join('+') : String(rawLangs),
+                    outputFormat: (['text', 'markdown', 'json'].includes(settings.outputFormat as string) ? settings.outputFormat : 'searchable-pdf') as any,
+                    scale: Number(settings.scale) || 2,
                 };
                 return await processor.process(createProcessInput(files, options), onProgress);
             }
