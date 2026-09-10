@@ -11,6 +11,7 @@ on:
       - completed
     branches:
       - main
+  workflow_dispatch:
 
 # Prevent concurrent builds
 concurrency:
@@ -23,7 +24,7 @@ env:
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     
     permissions:
       contents: write  # Required for creating releases
