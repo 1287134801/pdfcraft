@@ -13,11 +13,21 @@ export interface UpdateCheckButtonProps {
 }
 
 export const UpdateCheckButton: React.FC<UpdateCheckButtonProps> = ({ className = '' }) => {
-  const t = useTranslations('updater');
+  const t = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<UpdateCheckResult | null>(null);
   const [hasNotification, setHasNotification] = useState(false);
+
+  const checkBtnLabel = (() => {
+    try {
+      const msg = t('updater.checkBtn' as any);
+      if (msg && !msg.startsWith('updater.')) return msg;
+    } catch {
+      // fallback
+    }
+    return 'Check for updates';
+  })();
 
   // Background auto-check on mount
   useEffect(() => {
@@ -76,8 +86,8 @@ export const UpdateCheckButton: React.FC<UpdateCheckButtonProps> = ({ className 
         type="button"
         onClick={handleManualCheck}
         className={`relative flex items-center justify-center h-9 w-9 rounded-lg text-[hsl(var(--color-muted-foreground))] hover:text-[hsl(var(--color-foreground))] hover:bg-[hsl(var(--color-muted))/0.5] transition-all ${className}`}
-        aria-label={t('checkBtn') || 'Check for updates'}
-        title={t('checkBtn') || 'Check for updates'}
+        aria-label={checkBtnLabel}
+        title={checkBtnLabel}
       >
         <ArrowUpCircle className="h-5 w-5" aria-hidden="true" />
 

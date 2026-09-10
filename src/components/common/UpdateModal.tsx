@@ -33,8 +33,30 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   loading,
   onRetry,
 }) => {
-  const t = useTranslations('updater');
+  const t = useTranslations('common');
   const [showAllAssets, setShowAllAssets] = useState(false);
+
+  const getMsg = (
+    key: string,
+    fallback: string,
+    values?: Record<string, string | number>
+  ): string => {
+    try {
+      const fullKey = `updater.${key}`;
+      const msg = t(fullKey as any, values as any);
+      if (msg && !msg.startsWith('updater.')) return msg;
+    } catch {
+      // fallback
+    }
+    if (values) {
+      let res = fallback;
+      for (const [k, v] of Object.entries(values)) {
+        res = res.replace(`{${k}}`, String(v));
+      }
+      return res;
+    }
+    return fallback;
+  };
 
   const formatFileSize = (bytes: number): string => {
     if (!bytes) return '';
@@ -45,15 +67,15 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   const getAssetLabel = (asset: ReleaseAsset): string => {
     switch (asset.platformType) {
       case 'windows-portable':
-        return t('downloadPortable') || 'Windows Portable (ZIP)';
+        return getMsg('downloadPortable', 'Windows Portable (ZIP)');
       case 'windows-installer':
-        return t('downloadInstaller') || 'Windows Installer (.exe / .msi)';
+        return getMsg('downloadInstaller', 'Windows Installer (.exe / .msi)');
       case 'macos-dmg':
-        return t('downloadMac') || 'macOS (.dmg)';
+        return getMsg('downloadMac', 'macOS (.dmg)');
       case 'linux-appimage':
-        return t('downloadAppImage') || 'Linux AppImage (Portable)';
+        return getMsg('downloadAppImage', 'Linux AppImage (Portable)');
       case 'linux-deb':
-        return t('downloadDeb') || 'Linux Debian (.deb)';
+        return getMsg('downloadDeb', 'Linux Debian (.deb)');
       default:
         return asset.name;
     }
@@ -76,7 +98,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('title') || 'Software Update'}
+      title={getMsg('title', 'Software Update')}
       size="lg"
     >
       <div className="space-y-5 py-2">
@@ -85,7 +107,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           <div className="flex flex-col items-center justify-center py-10 space-y-4">
             <RefreshCw className="h-9 w-9 animate-spin text-[hsl(var(--color-primary))]" />
             <p className="text-sm text-[hsl(var(--color-muted-foreground))]">
-              {t('checking') || 'Checking for updates...'}
+              {getMsg('checking', 'Checking for updates...')}
             </p>
           </div>
         )}
@@ -98,7 +120,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             </div>
             <div className="space-y-1">
               <h3 className="font-semibold text-[hsl(var(--color-foreground))]">
-                {t('errorTitle') || 'Unable to check for updates'}
+                {getMsg('errorTitle', 'Unable to check for updates')}
               </h3>
               <p className="text-xs text-[hsl(var(--color-muted-foreground))] max-w-sm">
                 {result.error}
@@ -106,7 +128,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             </div>
             <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
               <RefreshCw className="h-4 w-4" />
-              {t('retry') || 'Retry'}
+              {getMsg('retry', 'Retry')}
             </Button>
           </div>
         )}
@@ -119,16 +141,19 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             </div>
             <div className="space-y-1">
               <h3 className="text-base font-semibold text-[hsl(var(--color-foreground))]">
-                {t('latest') || 'You are up to date!'}
+                {getMsg('latest', 'You are up to date!')}
               </h3>
               <p className="text-sm text-[hsl(var(--color-muted-foreground))]">
-                {t('latestDesc', { version: result?.currentVersion || '' }) ||
-                  `PDFCraft is currently at the latest version (${result?.currentVersion || ''}).`}
+                {getMsg(
+                  'latestDesc',
+                  'PDFCraft is currently at the latest version ({version}).',
+                  { version: result?.currentVersion || '' }
+                )}
               </p>
             </div>
             <div className="pt-2">
               <Button variant="primary" size="sm" onClick={onClose}>
-                {t('close') || 'Close'}
+                {getMsg('close', 'Close')}
               </Button>
             </div>
           </div>
@@ -145,18 +170,18 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-bold text-[hsl(var(--color-foreground))] text-base">
-                    {t('available') || 'New Version Available'}
+                    {getMsg('available', 'New Version Available')}
                   </h3>
                   <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                     {result.latestVersion}
                   </span>
                 </div>
                 <p className="text-xs text-[hsl(var(--color-muted-foreground))] mt-1">
-                  {t('currentVersion') || 'Current'}:{' '}
+                  {getMsg('currentVersion', 'Current')}:{' '}
                   <span className="font-mono">{result.currentVersion}</span>
                   {result.release?.publishedAt && (
                     <span className="ml-3">
-                      {t('released') || 'Released'}:{' '}
+                      {getMsg('released', 'Released')}:{' '}
                       {new Date(result.release.publishedAt).toLocaleDateString()}
                     </span>
                   )}
@@ -168,7 +193,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             {result.release?.body && (
               <div className="space-y-2">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--color-muted-foreground))]">
-                  {t('releaseNotes') || 'Release Notes'}
+                  {getMsg('releaseNotes', 'Release Notes')}
                 </div>
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-[hsl(var(--color-border))] bg-[hsl(var(--color-muted))/0.3] p-3 text-xs text-[hsl(var(--color-foreground))] whitespace-pre-wrap font-sans leading-relaxed">
                   {result.release.body}
@@ -214,7 +239,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                     onClick={() => setShowAllAssets(!showAllAssets)}
                     className="flex items-center gap-1 text-xs text-[hsl(var(--color-muted-foreground))] hover:text-[hsl(var(--color-foreground))] transition-colors"
                   >
-                    <span>{t('allDownloads') || 'View all platform downloads'}</span>
+                    <span>{getMsg('allDownloads', 'View all platform downloads')}</span>
                     {showAllAssets ? (
                       <ChevronUp className="h-3.5 w-3.5" />
                     ) : (
@@ -257,7 +282,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[hsl(var(--color-primary))] hover:underline"
               >
-                <span>{t('viewOnGithub') || 'View on GitHub'}</span>
+                <span>{getMsg('viewOnGithub', 'View on GitHub')}</span>
                 <ExternalLink className="h-3 w-3" />
               </a>
 
@@ -268,10 +293,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                   onClick={handleSkipVersion}
                   className="text-xs text-[hsl(var(--color-muted-foreground))] hover:text-[hsl(var(--color-foreground))]"
                 >
-                  {t('skipVersion') || 'Skip this version'}
+                  {getMsg('skipVersion', 'Skip this version')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
-                  {t('remindLater') || 'Remind later'}
+                  {getMsg('remindLater', 'Remind later')}
                 </Button>
               </div>
             </div>

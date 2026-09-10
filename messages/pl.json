@@ -932,6 +932,29 @@
       "codeCopied": "Kod SVG został skopiowany do schowka",
       "copyCode": "Skopiuj kod SVG",
       "downloadSvg": "Pobierz zasób SVG"
+    },
+    "updater": {
+      "title": "Aktualizacja oprogramowania",
+      "checkBtn": "Sprawdź aktualizacje",
+      "checking": "Sprawdzanie aktualizacji...",
+      "errorTitle": "Nie można sprawdzić aktualizacji",
+      "retry": "Ponów próbę",
+      "latest": "Wszystko jest aktualne!",
+      "latestDesc": "PDFCraft jest obecnie w najnowszej wersji ({version}).",
+      "available": "Dostępna nowa wersja",
+      "currentVersion": "Bieżąca wersja",
+      "released": "Wydano",
+      "releaseNotes": "Informacje o wydaniu",
+      "downloadPortable": "Pobierz wersję przenośną dla Windows (ZIP)",
+      "downloadInstaller": "Pobierz instalator dla Windows (.exe / .msi)",
+      "downloadMac": "Pobierz dla macOS (.dmg)",
+      "downloadAppImage": "Pobierz Linux AppImage (przenośny)",
+      "downloadDeb": "Pobierz pakiet Linux Debian (.deb)",
+      "allDownloads": "Pokaż pliki do pobrania dla wszystkich platform",
+      "viewOnGithub": "Zobacz na GitHubie",
+      "skipVersion": "Pomiń tę wersję",
+      "remindLater": "Przypomnij mi później",
+      "close": "Zamknij"
     }
   },
   "toolsPage": {
@@ -3210,28 +3233,5 @@
       "processButton": "Przetłumacz i przelicz fakturę",
       "successMessage": "Zagraniczna faktura została przetłumaczona i lokalna księga przeliczeniowa została pomyślnie ostemplowana!"
     }
-  },
-  "updater": {
-    "title": "Aktualizacja oprogramowania",
-    "checkBtn": "Sprawdź aktualizacje",
-    "checking": "Sprawdzanie aktualizacji...",
-    "errorTitle": "Nie można sprawdzić aktualizacji",
-    "retry": "Ponów próbę",
-    "latest": "Wszystko jest aktualne!",
-    "latestDesc": "PDFCraft jest obecnie w najnowszej wersji ({version}).",
-    "available": "Dostępna nowa wersja",
-    "currentVersion": "Bieżąca wersja",
-    "released": "Wydano",
-    "releaseNotes": "Informacje o wydaniu",
-    "downloadPortable": "Pobierz wersję przenośną dla Windows (ZIP)",
-    "downloadInstaller": "Pobierz instalator dla Windows (.exe / .msi)",
-    "downloadMac": "Pobierz dla macOS (.dmg)",
-    "downloadAppImage": "Pobierz Linux AppImage (przenośny)",
-    "downloadDeb": "Pobierz pakiet Linux Debian (.deb)",
-    "allDownloads": "Pokaż pliki do pobrania dla wszystkich platform",
-    "viewOnGithub": "Zobacz na GitHubie",
-    "skipVersion": "Pomiń tę wersję",
-    "remindLater": "Przypomnij mi później",
-    "close": "Zamknij"
   }
 }

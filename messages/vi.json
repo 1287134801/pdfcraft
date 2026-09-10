@@ -918,6 +918,29 @@
       "codeCopied": "Đã sao chép mã SVG vào bộ nhớ tạm",
       "copyCode": "Sao chép mã SVG",
       "downloadSvg": "Tải xuống tài sản SVG"
+    },
+    "updater": {
+      "title": "Cập nhật phần mềm",
+      "checkBtn": "Kiểm tra cập nhật",
+      "checking": "Đang kiểm tra cập nhật...",
+      "errorTitle": "Không thể kiểm tra cập nhật",
+      "retry": "Thử lại",
+      "latest": "Bạn đang dùng phiên bản mới nhất!",
+      "latestDesc": "PDFCraft hiện đang ở phiên bản mới nhất ({version}).",
+      "available": "Đã có phiên bản mới",
+      "currentVersion": "Phiên bản hiện tại",
+      "released": "Phát hành ngày",
+      "releaseNotes": "Ghi chú phát hành",
+      "downloadPortable": "Tải bản Windows Portable (ZIP)",
+      "downloadInstaller": "Tải trình cài đặt Windows (.exe / .msi)",
+      "downloadMac": "Tải bản cho macOS (.dmg)",
+      "downloadAppImage": "Tải Linux AppImage (Portable)",
+      "downloadDeb": "Tải gói Linux Debian (.deb)",
+      "allDownloads": "Xem tệp tải xuống cho mọi nền tảng",
+      "viewOnGithub": "Xem trên GitHub",
+      "skipVersion": "Bỏ qua phiên bản này",
+      "remindLater": "Nhắc tôi sau",
+      "close": "Đóng"
     }
   },
   "toolsPage": {
@@ -3187,28 +3210,5 @@
       "processButton": "Dịch & Quy đổi Hóa đơn",
       "successMessage": "Đã dịch hóa đơn nước ngoài và đóng dấu sổ quy đổi nội tệ thành công!"
     }
-  },
-  "updater": {
-    "title": "Cập nhật phần mềm",
-    "checkBtn": "Kiểm tra cập nhật",
-    "checking": "Đang kiểm tra cập nhật...",
-    "errorTitle": "Không thể kiểm tra cập nhật",
-    "retry": "Thử lại",
-    "latest": "Bạn đang dùng phiên bản mới nhất!",
-    "latestDesc": "PDFCraft hiện đang ở phiên bản mới nhất ({version}).",
-    "available": "Đã có phiên bản mới",
-    "currentVersion": "Phiên bản hiện tại",
-    "released": "Phát hành ngày",
-    "releaseNotes": "Ghi chú phát hành",
-    "downloadPortable": "Tải bản Windows Portable (ZIP)",
-    "downloadInstaller": "Tải trình cài đặt Windows (.exe / .msi)",
-    "downloadMac": "Tải bản cho macOS (.dmg)",
-    "downloadAppImage": "Tải Linux AppImage (Portable)",
-    "downloadDeb": "Tải gói Linux Debian (.deb)",
-    "allDownloads": "Xem tệp tải xuống cho mọi nền tảng",
-    "viewOnGithub": "Xem trên GitHub",
-    "skipVersion": "Bỏ qua phiên bản này",
-    "remindLater": "Nhắc tôi sau",
-    "close": "Đóng"
   }
 }

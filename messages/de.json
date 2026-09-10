@@ -918,6 +918,29 @@
       "codeCopied": "SVG-Code in die Zwischenablage kopiert",
       "copyCode": "SVG-Code kopieren",
       "downloadSvg": "Laden Sie SVG Asset herunter"
+    },
+    "updater": {
+      "title": "Software-Aktualisierung",
+      "checkBtn": "Nach Updates suchen",
+      "checking": "Suche nach Updates...",
+      "errorTitle": "Updates konnten nicht gesucht werden",
+      "retry": "Wiederholen",
+      "latest": "Sie sind auf dem neuesten Stand!",
+      "latestDesc": "PDFCraft ist aktuell auf der neuesten Version ({version}).",
+      "available": "Neue Version verfügbar",
+      "currentVersion": "Aktuelle Version",
+      "released": "Veröffentlicht am",
+      "releaseNotes": "Versionshinweise",
+      "downloadPortable": "Windows Portable herunterladen (ZIP)",
+      "downloadInstaller": "Windows-Installationsprogramm herunterladen (.exe / .msi)",
+      "downloadMac": "macOS herunterladen (.dmg)",
+      "downloadAppImage": "Linux AppImage herunterladen (Portable)",
+      "downloadDeb": "Linux Debian herunterladen (.deb)",
+      "allDownloads": "Alle Plattform-Downloads anzeigen",
+      "viewOnGithub": "Auf GitHub ansehen",
+      "skipVersion": "Diese Version überspringen",
+      "remindLater": "Später erinnern",
+      "close": "Schließen"
     }
   },
   "toolsPage": {
@@ -3187,28 +3210,5 @@
       "processButton": "Rechnung übersetzen und Währung umrechnen",
       "successMessage": "Fremdwährungsrechnung erfolgreich übersetzt und lokales Währungsledger-Siegel aufgestempelt!"
     }
-  },
-  "updater": {
-    "title": "Software-Aktualisierung",
-    "checkBtn": "Nach Updates suchen",
-    "checking": "Suche nach Updates...",
-    "errorTitle": "Updates konnten nicht gesucht werden",
-    "retry": "Wiederholen",
-    "latest": "Sie sind auf dem neuesten Stand!",
-    "latestDesc": "PDFCraft ist aktuell auf der neuesten Version ({version}).",
-    "available": "Neue Version verfügbar",
-    "currentVersion": "Aktuelle Version",
-    "released": "Veröffentlicht am",
-    "releaseNotes": "Versionshinweise",
-    "downloadPortable": "Windows Portable herunterladen (ZIP)",
-    "downloadInstaller": "Windows-Installationsprogramm herunterladen (.exe / .msi)",
-    "downloadMac": "macOS herunterladen (.dmg)",
-    "downloadAppImage": "Linux AppImage herunterladen (Portable)",
-    "downloadDeb": "Linux Debian herunterladen (.deb)",
-    "allDownloads": "Alle Plattform-Downloads anzeigen",
-    "viewOnGithub": "Auf GitHub ansehen",
-    "skipVersion": "Diese Version überspringen",
-    "remindLater": "Später erinnern",
-    "close": "Schließen"
   }
 }

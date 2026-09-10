@@ -932,6 +932,29 @@
       "codeCopied": "SVG code copied to clipboard",
       "copyCode": "Copy SVG Code",
       "downloadSvg": "Download SVG Asset"
+    },
+    "updater": {
+      "title": "Software Update",
+      "checkBtn": "Check for Updates",
+      "checking": "Checking for updates...",
+      "errorTitle": "Unable to check for updates",
+      "retry": "Retry",
+      "latest": "You are up to date!",
+      "latestDesc": "PDFCraft is currently at the latest version ({version}).",
+      "available": "New Version Available",
+      "currentVersion": "Current Version",
+      "released": "Released",
+      "releaseNotes": "Release Notes",
+      "downloadPortable": "Download Windows Portable (ZIP)",
+      "downloadInstaller": "Download Windows Installer (.exe / .msi)",
+      "downloadMac": "Download macOS (.dmg)",
+      "downloadAppImage": "Download Linux AppImage (Portable)",
+      "downloadDeb": "Download Linux Debian (.deb)",
+      "allDownloads": "View all platform downloads",
+      "viewOnGithub": "View on GitHub",
+      "skipVersion": "Skip this version",
+      "remindLater": "Remind me later",
+      "close": "Close"
     }
   },
   "toolsPage": {
@@ -3210,28 +3233,5 @@
       "processButton": "Translate & Convert Invoice",
       "successMessage": "Foreign invoice translated and local conversion ledger stamped successfully!"
     }
-  },
-  "updater": {
-    "title": "Software Update",
-    "checkBtn": "Check for Updates",
-    "checking": "Checking for updates...",
-    "errorTitle": "Unable to check for updates",
-    "retry": "Retry",
-    "latest": "You are up to date!",
-    "latestDesc": "PDFCraft is currently at the latest version ({version}).",
-    "available": "New Version Available",
-    "currentVersion": "Current Version",
-    "released": "Released",
-    "releaseNotes": "Release Notes",
-    "downloadPortable": "Download Windows Portable (ZIP)",
-    "downloadInstaller": "Download Windows Installer (.exe / .msi)",
-    "downloadMac": "Download macOS (.dmg)",
-    "downloadAppImage": "Download Linux AppImage (Portable)",
-    "downloadDeb": "Download Linux Debian (.deb)",
-    "allDownloads": "View all platform downloads",
-    "viewOnGithub": "View on GitHub",
-    "skipVersion": "Skip this version",
-    "remindLater": "Remind me later",
-    "close": "Close"
   }
 }
