@@ -1430,7 +1430,13 @@
         "name": "裁剪并调整大小",
         "description": "裁剪PDF页面并调整页面尺寸"
       }
-    }
+    },
+    "autoLayout": "一键整理布局",
+    "duplicateNode": "复制节点",
+    "downloadZip": "打包为 ZIP 下载",
+    "downloadIndividually": "分别下载各文件",
+    "flowControl": "流程控制",
+    "conditionGateway": "条件分支"
   },
   "tools": {
     "search": {
@@ -3196,5 +3202,28 @@
       "processButton": "一键发票翻译与折算",
       "successMessage": "外币发票翻译与本地折算账本印盖成功！"
     }
+  },
+  "updater": {
+    "title": "软件更新",
+    "checkBtn": "检查更新",
+    "checking": "正在检查更新...",
+    "errorTitle": "无法检查更新",
+    "retry": "重试",
+    "latest": "已是最新版本！",
+    "latestDesc": "您当前使用的是最新版本的 PDFCraft ({version})。",
+    "available": "发现新版本",
+    "currentVersion": "当前版本",
+    "released": "发布于",
+    "releaseNotes": "更新日志",
+    "downloadPortable": "下载 Windows 便携版 (ZIP)",
+    "downloadInstaller": "下载 Windows 安装包 (.exe / .msi)",
+    "downloadMac": "下载 macOS 安装包 (.dmg)",
+    "downloadAppImage": "下载 Linux AppImage (便携版)",
+    "downloadDeb": "下载 Linux Debian 安装包 (.deb)",
+    "allDownloads": "查看所有平台下载",
+    "viewOnGithub": "前往 GitHub 查看",
+    "skipVersion": "跳过此版本",
+    "remindLater": "稍后提醒",
+    "close": "关闭"
   }
 }

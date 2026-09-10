@@ -55,10 +55,18 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Generate version info
+        id: version
+        shell: bash
+        run: |
+          VERSION="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Build frontend
         run: npm run build
         env:
           TAURI_ENV: "true"
+          APP_VERSION: ${{ steps.version.outputs.version }}
 
       - name: Build Tauri app
         uses: nick-fields/retry@v3
@@ -72,6 +80,29 @@ jobs:
           TAURI_ENV: "true"
           RUST_BACKTRACE: "1"
 
+      - name: Package Portable Windows Build
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          echo "Packaging Windows portable version..."
+          mkdir -p src-tauri/target/release/bundle/portable
+          if [ -f "src-tauri/target/release/pdfcraft.exe" ]; then
+            cp "src-tauri/target/release/pdfcraft.exe" "src-tauri/target/release/bundle/portable/PDFCraft-Portable.exe"
+          elif [ -f "src-tauri/target/release/PDFCraft.exe" ]; then
+            cp "src-tauri/target/release/PDFCraft.exe" "src-tauri/target/release/bundle/portable/PDFCraft-Portable.exe"
+          fi
+          echo "PDFCraft Portable Mode" > "src-tauri/target/release/bundle/portable/portable.txt"
+          echo "All application data and cache will be stored in the 'data' folder alongside this file." >> "src-tauri/target/release/bundle/portable/portable.txt"
+          cd src-tauri/target/release/bundle/portable
+          if command -v 7z >/dev/null 2>&1; then
+            7z a ../PDFCraft-Windows-x64-Portable.zip PDFCraft-Portable.exe portable.txt
+          elif command -v zip >/dev/null 2>&1; then
+            zip -r ../PDFCraft-Windows-x64-Portable.zip PDFCraft-Portable.exe portable.txt
+          else
+            tar -a -c -f ../PDFCraft-Windows-x64-Portable.zip PDFCraft-Portable.exe portable.txt
+          fi
+          echo "Portable zip created at src-tauri/target/release/bundle/PDFCraft-Windows-x64-Portable.zip"
+
       - name: Upload Tauri bundles
         uses: actions/upload-artifact@v4
         with:
@@ -82,4 +113,5 @@ jobs:
             src-tauri/target/release/bundle/**/*.exe
             src-tauri/target/release/bundle/**/*.deb
             src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.zip
           if-no-files-found: warn

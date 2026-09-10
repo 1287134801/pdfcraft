@@ -18,6 +18,11 @@ const nextConfig = {
   
   assetPrefix: process.env.TAURI_ENV ? '/' : undefined,
 
+  env: {
+    NEXT_PUBLIC_APP_VERSION: process.env.APP_VERSION || process.env.npm_package_version || '0.1.0',
+    NEXT_PUBLIC_BUILD_DATE: new Date().toISOString(),
+  },
+
   // Webpack configuration for WASM modules
   webpack: (config, { isServer, webpack }) => {
     // Handle qpdf-wasm and other modules that use Node.js built-ins

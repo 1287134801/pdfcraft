@@ -1415,7 +1415,13 @@
         "name": "Cortar e redimensionar páginas",
         "description": "Cortar páginas PDF e ajustar as dimensões da página"
       }
-    }
+    },
+    "autoLayout": "Layout automático",
+    "duplicateNode": "Duplicar nó",
+    "downloadZip": "Baixar como ZIP",
+    "downloadIndividually": "Baixar arquivos individualmente",
+    "flowControl": "Controle de fluxo",
+    "conditionGateway": "Gateway condicional"
   },
   "tools": {
     "search": {
@@ -3181,5 +3187,28 @@
       "processButton": "Traduzir e converter fatura",
       "successMessage": "Fatura estrangeira traduzida e livro de conversão local carimbado com sucesso!"
     }
+  },
+  "updater": {
+    "title": "Atualização de software",
+    "checkBtn": "Verificar atualizações",
+    "checking": "Verificando atualizações...",
+    "errorTitle": "Não foi possível verificar atualizações",
+    "retry": "Tentar novamente",
+    "latest": "Você está atualizado!",
+    "latestDesc": "O PDFCraft está atualmente na versão mais recente ({version}).",
+    "available": "Nova versão disponível",
+    "currentVersion": "Versão atual",
+    "released": "Lançado em",
+    "releaseNotes": "Notas de lançamento",
+    "downloadPortable": "Baixar versão portátil para Windows (ZIP)",
+    "downloadInstaller": "Baixar instalador para Windows (.exe / .msi)",
+    "downloadMac": "Baixar para macOS (.dmg)",
+    "downloadAppImage": "Baixar Linux AppImage (portátil)",
+    "downloadDeb": "Baixar pacote Linux Debian (.deb)",
+    "allDownloads": "Ver downloads para todas as plataformas",
+    "viewOnGithub": "Ver no GitHub",
+    "skipVersion": "Ignorar esta versão",
+    "remindLater": "Lembrar mais tarde",
+    "close": "Fechar"
   }
 }

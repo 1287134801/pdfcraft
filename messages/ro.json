@@ -1415,7 +1415,13 @@
         "name": "Decupați și redimensionați paginile",
         "description": "Decupați paginile PDF și ajustați dimensiunile paginii"
       }
-    }
+    },
+    "autoLayout": "Aranjare automată",
+    "duplicateNode": "Duplicare nod",
+    "downloadZip": "Descărcare ca ZIP",
+    "downloadIndividually": "Descărcați fișierele individual",
+    "flowControl": "Control flux",
+    "conditionGateway": "Ramură condițională"
   },
   "tools": {
     "search": {
@@ -3181,5 +3187,28 @@
       "processButton": "Traduce și convertește factura",
       "successMessage": "Factura străină a fost tradusă și registrul de conversie local a fost ștampilat cu succes!"
     }
+  },
+  "updater": {
+    "title": "Actualizare software",
+    "checkBtn": "Verifică actualizări",
+    "checking": "Se caută actualizări...",
+    "errorTitle": "Nu s-au putut căuta actualizări",
+    "retry": "Reîncearcă",
+    "latest": "Aplicația este la zi!",
+    "latestDesc": "PDFCraft este în prezent la cea mai recentă versiune ({version}).",
+    "available": "Versiune nouă disponibilă",
+    "currentVersion": "Versiunea curentă",
+    "released": "Lansat la",
+    "releaseNotes": "Note de lansare",
+    "downloadPortable": "Descărcați versiunea portabilă Windows (ZIP)",
+    "downloadInstaller": "Descărcați programul de instalare Windows (.exe / .msi)",
+    "downloadMac": "Descărcați pentru macOS (.dmg)",
+    "downloadAppImage": "Descărcați Linux AppImage (Portabil)",
+    "downloadDeb": "Descărcați pachetul Linux Debian (.deb)",
+    "allDownloads": "Vizualizați descărcările pentru toate platformele",
+    "viewOnGithub": "Vizualizați pe GitHub",
+    "skipVersion": "Omiteți această versiune",
+    "remindLater": "Amintește-mi mai târziu",
+    "close": "Închide"
   }
 }
