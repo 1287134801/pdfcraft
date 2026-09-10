@@ -38,8 +38,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
-          cache-on-failure: true
+          workspaces: "src-tauri -> src-tauri/target"
 
       - name: Install Node 22
         uses: actions/setup-node@v4
@@ -56,6 +55,11 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Build frontend
+        run: npm run build
+        env:
+          TAURI_ENV: "true"
+
       - name: Build Tauri app
         uses: nick-fields/retry@v3
         with:
@@ -63,15 +67,10 @@ jobs:
           max_attempts: 3
           retry_on: error
           shell: bash
-          command: npx tauri build
+          command: npx tauri build -v --ci
         env:
           TAURI_ENV: "true"
-
-      - name: Validate Tauri action wiring
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_ENV: "true"
+          RUST_BACKTRACE: "1"
 
       - name: Upload Tauri bundles
         uses: actions/upload-artifact@v4
