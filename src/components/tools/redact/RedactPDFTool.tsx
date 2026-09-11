@@ -921,19 +921,11 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       {/* Upload Screen */}
       {!file && (
         <Card className="p-8 text-center bg-card border border-border shadow-sm rounded-xl">
-          <div className="max-w-xl mx-auto space-y-4">
-            <h2 className="text-2xl font-bold tracking-tight">PDF 涂黑与马赛克脱敏工具</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              在浏览器中对 PDF 敏感区域进行抹黑、马赛克或模糊处理。
-              采用<strong>物理像素级不可逆销毁</strong>与<strong>深度元数据擦除</strong>技术，
-              100% 纯本地离线计算，确保隐私内容绝对无法还原。
-            </p>
-
+          <div className="max-w-xl mx-auto space-y-6">
             <FileUploader
               accept={['application/pdf', '.pdf']}
               maxFiles={1}
               onFilesSelected={handleFilesSelected}
-              className="mt-6"
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 text-left border-t border-border">
