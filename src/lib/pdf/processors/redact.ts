@@ -11,11 +11,21 @@ import { loadPdfjs } from '../loader';
 export type RedactionStyle = 'blackout' | 'whiteout' | 'mosaic' | 'blur' | 'custom-color';
 
 /**
- * Redaction Area on a specific page
+ * Coordinate point for freehand paths
+ */
+export interface Point {
+  x: number;
+  y: number;
+}
+
+/**
+ * Redaction Area or Brush Stroke on a specific page
  */
 export interface RedactionArea {
   /** Unique ID */
   id?: string;
+  /** Drawing shape type: 'rect' (box) or 'brush' (freehand stroke) */
+  type?: 'rect' | 'brush';
   /** Page number (1-indexed) */
   page: number;
   /** X coordinate (relative to pageWidth) */
@@ -26,6 +36,10 @@ export interface RedactionArea {
   width: number;
   /** Height */
   height: number;
+  /** Freehand path coordinate points (when type === 'brush') */
+  path?: Point[];
+  /** Brush stroke width in points/pixels (default: 20) */
+  strokeWidth?: number;
   /** Page reference width */
   pageWidth?: number;
   /** Page reference height */
@@ -62,17 +76,27 @@ export function validateRedactionAreas(
     if (area.page < 1 || area.page > totalPages) {
       errors.push(`Invalid page number ${area.page} at area #${areaIndex} (must be between 1 and ${totalPages})`);
     }
-    if (area.width < 0) {
-      errors.push(`Width cannot be negative at area #${areaIndex}`);
-    }
-    if (area.height < 0) {
-      errors.push(`Height cannot be negative at area #${areaIndex}`);
-    }
-    if (area.x < 0) {
-      errors.push(`X coordinate cannot be negative at area #${areaIndex}`);
-    }
-    if (area.y < 0) {
-      errors.push(`Y coordinate cannot be negative at area #${areaIndex}`);
+
+    if (area.type === 'brush') {
+      if (!area.path || area.path.length === 0) {
+        errors.push(`Brush path cannot be empty at area #${areaIndex}`);
+      }
+      if (area.strokeWidth !== undefined && area.strokeWidth <= 0) {
+        errors.push(`Brush stroke width must be positive at area #${areaIndex}`);
+      }
+    } else {
+      if (area.width < 0) {
+        errors.push(`Width cannot be negative at area #${areaIndex}`);
+      }
+      if (area.height < 0) {
+        errors.push(`Height cannot be negative at area #${areaIndex}`);
+      }
+      if (area.x < 0) {
+        errors.push(`X coordinate cannot be negative at area #${areaIndex}`);
+      }
+      if (area.y < 0) {
+        errors.push(`Y coordinate cannot be negative at area #${areaIndex}`);
+      }
     }
   });
 
@@ -287,6 +311,130 @@ export function applyBlur(
 }
 
 /**
+ * Apply a freehand brush stroke redaction to a canvas
+ */
+export function renderBrushOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  area: RedactionArea,
+  canvasWidth: number,
+  canvasHeight: number
+): void {
+  if (!area.path || area.path.length === 0) return;
+
+  const scaleX = area.pageWidth ? canvasWidth / area.pageWidth : 1;
+  const scaleY = area.pageHeight ? canvasHeight / area.pageHeight : 1;
+  const strokeW = Math.max(1, (area.strokeWidth || 20) * scaleX);
+
+  const pts = area.path.map((pt) => ({
+    x: pt.x * scaleX,
+    y: pt.y * scaleY,
+  }));
+
+  const drawStrokePath = (c: CanvasRenderingContext2D, offsetX = 0, offsetY = 0) => {
+    c.beginPath();
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.lineWidth = strokeW;
+
+    if (pts.length === 1) {
+      c.arc(pts[0].x - offsetX, pts[0].y - offsetY, strokeW / 2, 0, Math.PI * 2);
+      c.fill();
+    } else {
+      c.moveTo(pts[0].x - offsetX, pts[0].y - offsetY);
+      for (let i = 1; i < pts.length; i++) {
+        c.lineTo(pts[i].x - offsetX, pts[i].y - offsetY);
+      }
+      c.stroke();
+    }
+  };
+
+  const style = area.style || 'blackout';
+
+  if (style === 'blackout' || style === 'whiteout' || style === 'custom-color') {
+    ctx.save();
+    const fillColor =
+      style === 'whiteout'
+        ? '#ffffff'
+        : style === 'custom-color'
+        ? area.color || '#000000'
+        : '#000000';
+    ctx.strokeStyle = fillColor;
+    ctx.fillStyle = fillColor;
+    drawStrokePath(ctx);
+    ctx.restore();
+    return;
+  }
+
+  // Handle mosaic or blur along brush stroke using clipping mask
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const padding = Math.ceil(strokeW / 2) + 2;
+  const bx = Math.max(0, Math.floor(minX - padding));
+  const by = Math.max(0, Math.floor(minY - padding));
+  const bw = Math.min(canvasWidth - bx, Math.ceil(maxX + padding) - bx);
+  const bh = Math.min(canvasHeight - by, Math.ceil(maxY + padding) - by);
+
+  if (bw <= 0 || bh <= 0) return;
+
+  try {
+    if (typeof document !== 'undefined' && ctx.canvas) {
+      const effectCanvas = document.createElement('canvas');
+      effectCanvas.width = bw;
+      effectCanvas.height = bh;
+      const effectCtx = effectCanvas.getContext('2d', { willReadFrequently: true });
+
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = bw;
+      maskCanvas.height = bh;
+      const maskCtx = maskCanvas.getContext('2d');
+
+      if (effectCtx && maskCtx) {
+        // Copy original background pixels into effect canvas
+        effectCtx.drawImage(ctx.canvas, bx, by, bw, bh, 0, 0, bw, bh);
+
+        if (style === 'mosaic') {
+          applyPixelate(effectCtx, 0, 0, bw, bh, (area.blockSize || 10) * scaleX);
+        } else if (style === 'blur') {
+          applyBlur(effectCtx, 0, 0, bw, bh, (area.blurRadius || 8) * scaleX);
+        }
+
+        // Draw brush stroke on mask canvas
+        maskCtx.fillStyle = '#ffffff';
+        maskCtx.strokeStyle = '#ffffff';
+        drawStrokePath(maskCtx, bx, by);
+
+        // Mask the effect with the brush path
+        maskCtx.globalCompositeOperation = 'source-in';
+        maskCtx.drawImage(effectCanvas, 0, 0);
+
+        // Blit back onto original canvas
+        ctx.save();
+        ctx.drawImage(maskCanvas, bx, by);
+        ctx.restore();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Masked brush composite failed, falling back to solid stroke:', err);
+  }
+
+  // Fallback if masking canvas is unavailable (e.g. headless unit tests)
+  ctx.save();
+  ctx.strokeStyle = '#000000';
+  ctx.fillStyle = '#000000';
+  drawStrokePath(ctx);
+  ctx.restore();
+}
+
+/**
  * Apply a single redaction area to a canvas
  */
 export function renderRedactionAreaOnCanvas(
@@ -295,6 +443,11 @@ export function renderRedactionAreaOnCanvas(
   canvasWidth: number,
   canvasHeight: number
 ): void {
+  if (area.type === 'brush' && area.path && area.path.length > 0) {
+    renderBrushOnCanvas(ctx, area, canvasWidth, canvasHeight);
+    return;
+  }
+
   const scaleX = area.pageWidth ? canvasWidth / area.pageWidth : 1;
   const scaleY = area.pageHeight ? canvasHeight / area.pageHeight : 1;
 

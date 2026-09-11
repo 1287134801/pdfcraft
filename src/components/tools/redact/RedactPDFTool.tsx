@@ -30,6 +30,8 @@ import {
   Info,
   Maximize,
   FileCheck,
+  Paintbrush,
+  Square,
 } from 'lucide-react';
 
 import { FileUploader } from '../FileUploader';
@@ -47,10 +49,44 @@ import {
   type RedactionArea,
   type RedactionStyle,
   type RedactOptions,
+  type Point,
 } from '@/lib/pdf/processors/redact';
 
 export interface RedactPDFToolProps {
   className?: string;
+}
+
+function isPointNearBrushPath(
+  px: number,
+  py: number,
+  path: Point[],
+  strokeWidth: number,
+  tolerance = 6
+): boolean {
+  if (!path || path.length === 0) return false;
+  const maxDistSq = Math.pow(strokeWidth / 2 + tolerance, 2);
+
+  if (path.length === 1) {
+    const distSq = Math.pow(px - path[0].x, 2) + Math.pow(py - path[0].y, 2);
+    return distSq <= maxDistSq;
+  }
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const p1 = path[i];
+    const p2 = path[i + 1];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const l2 = dx * dx + dy * dy;
+    let t = 0;
+    if (l2 > 0) {
+      t = Math.max(0, Math.min(1, ((px - p1.x) * dx + (py - p1.y) * dy) / l2));
+    }
+    const projX = p1.x + t * dx;
+    const projY = p1.y + t * dy;
+    const distSq = Math.pow(px - projX, 2) + Math.pow(py - projY, 2);
+    if (distSq <= maxDistSq) return true;
+  }
+  return false;
 }
 
 const DRAFT_COLORS = [
@@ -94,6 +130,11 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Active redaction tool settings
+  const [activeTool, setActiveTool] = useState<'brush' | 'rect'>('brush');
+  const [brushWidth, setBrushWidth] = useState<number>(20);
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
+  const activeBrushPathRef = useRef<Point[]>([]);
+
   const [activeStyle, setActiveStyle] = useState<RedactionStyle>('blackout');
   const [activeColor, setActiveColor] = useState('#000000');
   const [activeDraftColor, setActiveDraftColor] = useState('red');
@@ -338,6 +379,196 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       const h = areaToDraw.height * scaleY;
       const style = areaToDraw.style || 'blackout';
 
+      if (areaToDraw.type === 'brush' && areaToDraw.path && areaToDraw.path.length > 0) {
+        const pts = areaToDraw.path.map((p) => ({
+          x: p.x * scaleX,
+          y: p.y * scaleY,
+        }));
+        const sw = Math.max(1, (areaToDraw.strokeWidth || 20) * scaleX);
+
+        if (previewMode) {
+          if (style === 'whiteout' || style === 'custom-color' || style === 'blackout') {
+            ctx.save();
+            const fillCol =
+              style === 'whiteout'
+                ? '#ffffff'
+                : style === 'custom-color'
+                ? areaToDraw.color || '#000000'
+                : '#000000';
+            ctx.strokeStyle = fillCol;
+            ctx.fillStyle = fillCol;
+            ctx.lineWidth = sw;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            if (pts.length === 1) {
+              ctx.arc(pts[0].x, pts[0].y, sw / 2, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.moveTo(pts[0].x, pts[0].y);
+              for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+              ctx.stroke();
+            }
+            ctx.restore();
+          } else {
+            // Mosaic or blur in preview mode
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of pts) {
+              if (p.x < minX) minX = p.x;
+              if (p.x > maxX) maxX = p.x;
+              if (p.y < minY) minY = p.y;
+              if (p.y > maxY) maxY = p.y;
+            }
+            const pad = Math.ceil(sw / 2) + 2;
+            const bx = Math.max(0, Math.floor(minX - pad));
+            const by = Math.max(0, Math.floor(minY - pad));
+            const bw = Math.min(cssWidth - bx, Math.ceil(maxX + pad) - bx);
+            const bh = Math.min(cssHeight - by, Math.ceil(maxY + pad) - by);
+
+            const baseCtx = baseCanvas.getContext('2d');
+            if (baseCtx && bw > 0 && bh > 0) {
+              const physBx = Math.floor(bx * dpr);
+              const physBy = Math.floor(by * dpr);
+              const physBw = Math.ceil(bw * dpr);
+              const physBh = Math.ceil(bh * dpr);
+
+              const imgData = baseCtx.getImageData(physBx, physBy, physBw, physBh);
+              if (style === 'mosaic') {
+                const block = Math.max(2, Math.floor((areaToDraw.blockSize || 10) * dpr));
+                for (let rby = 0; rby < physBh; rby += block) {
+                  for (let rbx = 0; rbx < physBw; rbx += block) {
+                    let rSum = 0, gSum = 0, bSum = 0, count = 0;
+                    const bH = Math.min(block, physBh - rby);
+                    const bW = Math.min(block, physBw - rbx);
+                    for (let dy = 0; dy < bH; dy++) {
+                      for (let dx = 0; dx < bW; dx++) {
+                        const idx = ((rby + dy) * physBw + (rbx + dx)) * 4;
+                        rSum += imgData.data[idx];
+                        gSum += imgData.data[idx + 1];
+                        bSum += imgData.data[idx + 2];
+                        count++;
+                      }
+                    }
+                    if (count > 0) {
+                      const rAvg = Math.round(rSum / count);
+                      const gAvg = Math.round(gSum / count);
+                      const bAvg = Math.round(bSum / count);
+                      for (let dy = 0; dy < bH; dy++) {
+                        for (let dx = 0; dx < bW; dx++) {
+                          const idx = ((rby + dy) * physBw + (rbx + dx)) * 4;
+                          imgData.data[idx] = rAvg;
+                          imgData.data[idx + 1] = gAvg;
+                          imgData.data[idx + 2] = bAvg;
+                        }
+                      }
+                    }
+                  }
+                }
+              } else if (style === 'blur') {
+                const rad = Math.max(1, Math.floor((areaToDraw.blurRadius || 8) * dpr));
+                const data = imgData.data;
+                const temp = new Uint8ClampedArray(data);
+                for (let row = 0; row < physBh; row++) {
+                  for (let col = 0; col < physBw; col++) {
+                    let r = 0, g = 0, b = 0, count = 0;
+                    const start = Math.max(0, col - rad);
+                    const end = Math.min(physBw - 1, col + rad);
+                    for (let k = start; k <= end; k++) {
+                      const idx = (row * physBw + k) * 4;
+                      r += temp[idx]; g += temp[idx + 1]; b += temp[idx + 2]; count++;
+                    }
+                    const outIdx = (row * physBw + col) * 4;
+                    data[outIdx] = Math.round(r / count);
+                    data[outIdx + 1] = Math.round(g / count);
+                    data[outIdx + 2] = Math.round(b / count);
+                  }
+                }
+              }
+
+              const effectCanvas = document.createElement('canvas');
+              effectCanvas.width = physBw;
+              effectCanvas.height = physBh;
+              const effectCtx = effectCanvas.getContext('2d');
+              if (effectCtx) {
+                effectCtx.putImageData(imgData, 0, 0);
+
+                const maskCanvas = document.createElement('canvas');
+                maskCanvas.width = physBw;
+                maskCanvas.height = physBh;
+                const maskCtx = maskCanvas.getContext('2d');
+                if (maskCtx) {
+                  maskCtx.scale(dpr, dpr);
+                  maskCtx.fillStyle = '#ffffff';
+                  maskCtx.strokeStyle = '#ffffff';
+                  maskCtx.lineWidth = sw;
+                  maskCtx.lineCap = 'round';
+                  maskCtx.lineJoin = 'round';
+                  maskCtx.beginPath();
+                  if (pts.length === 1) {
+                    maskCtx.arc(pts[0].x - bx, pts[0].y - by, sw / 2, 0, Math.PI * 2);
+                    maskCtx.fill();
+                  } else {
+                    maskCtx.moveTo(pts[0].x - bx, pts[0].y - by);
+                    for (let i = 1; i < pts.length; i++) maskCtx.lineTo(pts[i].x - bx, pts[i].y - by);
+                    maskCtx.stroke();
+                  }
+
+                  maskCtx.globalCompositeOperation = 'source-in';
+                  maskCtx.drawImage(effectCanvas, 0, 0, bw, bh);
+
+                  ctx.save();
+                  ctx.drawImage(maskCanvas, bx, by, bw, bh);
+                  ctx.restore();
+                }
+              }
+            }
+          }
+        } else {
+          // Edit mode for brush
+          const draftStyle = DRAFT_COLORS.find((c) => c.id === areaToDraw.draftColor) || DRAFT_COLORS[0];
+          ctx.save();
+          ctx.lineWidth = sw;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.strokeStyle = isSelected ? draftStyle.stroke : draftStyle.fill.replace('0.25', '0.55');
+          ctx.fillStyle = ctx.strokeStyle;
+
+          ctx.beginPath();
+          if (pts.length === 1) {
+            ctx.arc(pts[0].x, pts[0].y, sw / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.stroke();
+          }
+
+          if (isSelected) {
+            ctx.lineWidth = sw + 4;
+            ctx.strokeStyle = '#2563eb';
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+          }
+
+          // Badge at start point
+          ctx.setLineDash([]);
+          ctx.fillStyle = draftStyle.stroke;
+          ctx.font = 'bold 11px sans-serif';
+          const labelText = `#${index + 1} 🖌️ ${style.toUpperCase()}`;
+          const textMetrics = ctx.measureText(labelText);
+          const badgeW = textMetrics.width + 8;
+          const badgeH = 18;
+          const badgeX = Math.max(0, pts[0].x - 4);
+          const badgeY = pts[0].y > 20 ? pts[0].y - 20 : pts[0].y + 8;
+
+          ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(labelText, badgeX + 4, badgeY + 13);
+          ctx.restore();
+        }
+        return;
+      }
+
       if (previewMode) {
         // In preview mode: copy pixels from baseCanvas and apply real redaction (mosaic/blur/blackout)
         ctx.save();
@@ -487,28 +718,86 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       }
     });
 
-    // Draw active rectangle during drag-drawing
+    // Draw active drawing during drag / brush
     if (isDrawing && tempAreaRef.current) {
-      const area = tempAreaRef.current;
-      const pw = area.pageWidth || cssWidth;
-      const ph = area.pageHeight || cssHeight;
-      const scaleX = cssWidth / pw;
-      const scaleY = cssHeight / ph;
-      const x = area.x * scaleX;
-      const y = area.y * scaleY;
-      const w = area.width * scaleX;
-      const h = area.height * scaleY;
+      if (tempAreaRef.current.type === 'brush' && tempAreaRef.current.path) {
+        const pts = tempAreaRef.current.path;
+        if (pts.length > 0) {
+          ctx.save();
+          const sw = tempAreaRef.current.strokeWidth || brushWidth;
+          ctx.lineWidth = sw;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          const draftStyle = DRAFT_COLORS.find((c) => c.id === activeDraftColor) || DRAFT_COLORS[0];
+          ctx.strokeStyle =
+            activeStyle === 'blackout'
+              ? 'rgba(0, 0, 0, 0.85)'
+              : activeStyle === 'whiteout'
+              ? 'rgba(255, 255, 255, 0.9)'
+              : draftStyle.stroke;
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.beginPath();
+          if (pts.length === 1) {
+            ctx.arc(pts[0].x, pts[0].y, sw / 2, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+              ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      } else {
+        const area = tempAreaRef.current;
+        const pw = area.pageWidth || cssWidth;
+        const ph = area.pageHeight || cssHeight;
+        const scaleX = cssWidth / pw;
+        const scaleY = cssHeight / ph;
+        const x = area.x * scaleX;
+        const y = area.y * scaleY;
+        const w = area.width * scaleX;
+        const h = area.height * scaleY;
 
+        ctx.setLineDash([3, 3]);
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+      }
+    }
+
+    // Draw brush hover cursor preview circle
+    if (!previewMode && activeTool === 'brush' && cursorPos) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cursorPos.x, cursorPos.y, brushWidth / 2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)';
+      ctx.lineWidth = 1.5;
       ctx.setLineDash([3, 3]);
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
-      ctx.strokeStyle = '#2563eb';
-      ctx.lineWidth = 2;
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeRect(x, y, w, h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cursorPos.x, cursorPos.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+      ctx.fill();
+      ctx.restore();
     }
 
     ctx.restore();
-  }, [redactions, currentPage, selectedAreaId, previewMode, isDrawing]);
+  }, [
+    redactions,
+    currentPage,
+    selectedAreaId,
+    previewMode,
+    isDrawing,
+    activeTool,
+    brushWidth,
+    cursorPos,
+    activeDraftColor,
+    activeStyle,
+  ]);
 
   // Re-render PDF page when doc, canvas ready, current page, or scale changes
   useEffect(() => {
@@ -579,10 +868,37 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
 
       const pageAreas = redactions[currentPage] || [];
 
-      // 1. Check if clicking on resize handles of selected area
+      // Brush mode: immediately begin freehand painting
+      if (activeTool === 'brush') {
+        setSelectedAreaId(null);
+        setIsDrawing(true);
+        activeBrushPathRef.current = [{ x: coords.x, y: coords.y }];
+        tempAreaRef.current = {
+          id: `brush-${Date.now()}`,
+          type: 'brush',
+          page: currentPage,
+          x: coords.x,
+          y: coords.y,
+          width: brushWidth,
+          height: brushWidth,
+          path: [{ x: coords.x, y: coords.y }],
+          strokeWidth: brushWidth,
+          pageWidth: coords.cssWidth,
+          pageHeight: coords.cssHeight,
+          style: activeStyle,
+          color: activeColor,
+          draftColor: activeDraftColor,
+          blockSize: activeBlockSize,
+          blurRadius: activeBlurRadius,
+        };
+        requestAnimationFrame(drawOverlay);
+        return;
+      }
+
+      // 1. Check if clicking on resize handles of selected area (rect mode)
       if (selectedAreaId) {
         const selectedArea = pageAreas.find((a) => a.id === selectedAreaId);
-        if (selectedArea) {
+        if (selectedArea && selectedArea.type !== 'brush') {
           const handle = checkResizeHandle(coords, selectedArea, coords.cssWidth, coords.cssHeight);
           if (handle) {
             isResizingRef.current = true;
@@ -602,20 +918,36 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
         const ph = area.pageHeight || coords.cssHeight;
         const scaleX = coords.cssWidth / pw;
         const scaleY = coords.cssHeight / ph;
-        const ax = area.x * scaleX;
-        const ay = area.y * scaleY;
-        const aw = area.width * scaleX;
-        const ah = area.height * scaleY;
 
-        if (coords.x >= ax && coords.x <= ax + aw && coords.y >= ay && coords.y <= ay + ah) {
-          setSelectedAreaId(area.id || null);
-          isDraggingRef.current = true;
-          dragStartPointRef.current = coords;
-          dragStartAreaRef.current = { ...area };
-          tempAreaRef.current = { ...area };
-          drawOverlay();
-          e.stopPropagation();
-          return;
+        if (area.type === 'brush' && area.path) {
+          const scaledPath = area.path.map((pt) => ({ x: pt.x * scaleX, y: pt.y * scaleY }));
+          const sw = (area.strokeWidth || brushWidth) * scaleX;
+          if (isPointNearBrushPath(coords.x, coords.y, scaledPath, sw)) {
+            setSelectedAreaId(area.id || null);
+            isDraggingRef.current = true;
+            dragStartPointRef.current = coords;
+            dragStartAreaRef.current = { ...area };
+            tempAreaRef.current = { ...area };
+            drawOverlay();
+            e.stopPropagation();
+            return;
+          }
+        } else {
+          const ax = area.x * scaleX;
+          const ay = area.y * scaleY;
+          const aw = area.width * scaleX;
+          const ah = area.height * scaleY;
+
+          if (coords.x >= ax && coords.x <= ax + aw && coords.y >= ay && coords.y <= ay + ah) {
+            setSelectedAreaId(area.id || null);
+            isDraggingRef.current = true;
+            dragStartPointRef.current = coords;
+            dragStartAreaRef.current = { ...area };
+            tempAreaRef.current = { ...area };
+            drawOverlay();
+            e.stopPropagation();
+            return;
+          }
         }
       }
 
@@ -625,6 +957,7 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       drawingStartRef.current = coords;
       tempAreaRef.current = {
         id: `redact-${Date.now()}`,
+        type: 'rect',
         page: currentPage,
         x: coords.x,
         y: coords.y,
@@ -646,6 +979,8 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       currentPage,
       selectedAreaId,
       checkResizeHandle,
+      activeTool,
+      brushWidth,
       activeStyle,
       activeColor,
       activeDraftColor,
@@ -662,6 +997,20 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       const coords = getCanvasCoords(e);
       if (!coords) return;
 
+      setCursorPos({ x: coords.x, y: coords.y });
+
+      // Handle drawing brush stroke
+      if (isDrawing && activeTool === 'brush' && activeBrushPathRef.current.length > 0 && tempAreaRef.current) {
+        const lastPt = activeBrushPathRef.current[activeBrushPathRef.current.length - 1];
+        const dist = Math.hypot(coords.x - lastPt.x, coords.y - lastPt.y);
+        if (dist >= 2) {
+          activeBrushPathRef.current.push({ x: coords.x, y: coords.y });
+          tempAreaRef.current.path = [...activeBrushPathRef.current];
+          requestAnimationFrame(drawOverlay);
+        }
+        return;
+      }
+
       // Handle dragging existing area
       if (isDraggingRef.current && dragStartPointRef.current && dragStartAreaRef.current) {
         const pw = dragStartAreaRef.current.pageWidth || coords.cssWidth;
@@ -671,11 +1020,25 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
         const scaleX = pw / coords.cssWidth;
         const scaleY = ph / coords.cssHeight;
 
-        tempAreaRef.current = {
-          ...dragStartAreaRef.current,
-          x: Math.max(0, dragStartAreaRef.current.x + deltaX * scaleX),
-          y: Math.max(0, dragStartAreaRef.current.y + deltaY * scaleY),
-        };
+        if (dragStartAreaRef.current.type === 'brush' && dragStartAreaRef.current.path) {
+          const shiftX = deltaX * scaleX;
+          const shiftY = deltaY * scaleY;
+          tempAreaRef.current = {
+            ...dragStartAreaRef.current,
+            x: Math.max(0, dragStartAreaRef.current.x + shiftX),
+            y: Math.max(0, dragStartAreaRef.current.y + shiftY),
+            path: dragStartAreaRef.current.path.map((pt) => ({
+              x: Math.max(0, pt.x + shiftX),
+              y: Math.max(0, pt.y + shiftY),
+            })),
+          };
+        } else {
+          tempAreaRef.current = {
+            ...dragStartAreaRef.current,
+            x: Math.max(0, dragStartAreaRef.current.x + deltaX * scaleX),
+            y: Math.max(0, dragStartAreaRef.current.y + deltaY * scaleY),
+          };
+        }
         requestAnimationFrame(drawOverlay);
         return;
       }
@@ -707,8 +1070,8 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
         return;
       }
 
-      // Handle drawing new area
-      if (isDrawing && drawingStartRef.current && tempAreaRef.current) {
+      // Handle drawing new rectangle area
+      if (isDrawing && activeTool === 'rect' && drawingStartRef.current && tempAreaRef.current) {
         const startX = drawingStartRef.current.x;
         const startY = drawingStartRef.current.y;
 
@@ -725,9 +1088,15 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
           height,
         };
         requestAnimationFrame(drawOverlay);
+        return;
+      }
+
+      // If hovering in brush mode, redraw to update preview cursor circle
+      if (activeTool === 'brush') {
+        requestAnimationFrame(drawOverlay);
       }
     },
-    [previewMode, getCanvasCoords, isDrawing, drawOverlay]
+    [previewMode, getCanvasCoords, isDrawing, activeTool, drawOverlay]
   );
 
   // Mouse Up handler
@@ -765,7 +1134,48 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       return;
     }
 
-    if (isDrawing && tempAreaRef.current) {
+    if (isDrawing && activeTool === 'brush' && tempAreaRef.current) {
+      setIsDrawing(false);
+      const area = tempAreaRef.current;
+      tempAreaRef.current = null;
+      const pts = [...activeBrushPathRef.current];
+      activeBrushPathRef.current = [];
+
+      if (pts.length > 0) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const p of pts) {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.y > maxY) maxY = p.y;
+        }
+        const radius = (area.strokeWidth || brushWidth) / 2;
+        const left = Math.max(0, minX - radius);
+        const top = Math.max(0, minY - radius);
+        const width = Math.max(radius * 2, maxX - minX + radius * 2);
+        const height = Math.max(radius * 2, maxY - minY + radius * 2);
+
+        const finalizedArea: RedactionArea = {
+          ...area,
+          x: left,
+          y: top,
+          width,
+          height,
+          path: pts,
+        };
+
+        setRedactions((prev) => {
+          const pageList = prev[currentPage] || [];
+          const next = { ...prev, [currentPage]: [...pageList, finalizedArea] };
+          pushHistory(next);
+          return next;
+        });
+        setSelectedAreaId(finalizedArea.id || null);
+      }
+      return;
+    }
+
+    if (isDrawing && activeTool === 'rect' && tempAreaRef.current) {
       setIsDrawing(false);
       drawingStartRef.current = null;
       const area = tempAreaRef.current;
@@ -782,7 +1192,7 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
         setSelectedAreaId(area.id || null);
       }
     }
-  }, [previewMode, currentPage, selectedAreaId, isDrawing, pushHistory]);
+  }, [previewMode, currentPage, selectedAreaId, isDrawing, activeTool, brushWidth, pushHistory]);
 
   // Remove selected area
   const handleRemoveSelected = useCallback(() => {
@@ -961,8 +1371,86 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
           {/* Top Control Bar */}
           <Card className="p-4 bg-card border border-border rounded-xl shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Left: Mode Selection & Styles */}
+              {/* Left: Tool Selection & Styles */}
               <div className="flex flex-wrap items-center gap-2">
+                {/* Tool Selector: Brush vs Rect */}
+                <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
+                  <Button
+                    size="sm"
+                    variant={activeTool === 'brush' ? 'primary' : 'ghost'}
+                    onClick={() => setActiveTool('brush')}
+                    className="gap-1.5 text-xs h-8 font-medium"
+                    title="自由画笔涂抹模式"
+                  >
+                    <Paintbrush className="w-3.5 h-3.5" />
+                    自由画笔
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={activeTool === 'rect' ? 'primary' : 'ghost'}
+                    onClick={() => setActiveTool('rect')}
+                    className="gap-1.5 text-xs h-8 font-medium"
+                    title="矩形框选模式"
+                  >
+                    <Square className="w-3.5 h-3.5" />
+                    矩形选区
+                  </Button>
+                </div>
+
+                {/* Brush Thickness Controls (Shown when in Brush mode) */}
+                {activeTool === 'brush' && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-lg border border-border text-xs">
+                    <span className="text-muted-foreground whitespace-nowrap font-medium">粗细:</span>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { label: '细', size: 8 },
+                        { label: '中', size: 16 },
+                        { label: '粗', size: 28 },
+                        { label: '特粗', size: 44 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.size}
+                          type="button"
+                          onClick={() => setBrushWidth(preset.size)}
+                          className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                            brushWidth === preset.size
+                              ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                              : 'bg-muted/60 hover:bg-muted text-foreground'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <input
+                      type="range"
+                      min="4"
+                      max="64"
+                      step="2"
+                      value={brushWidth}
+                      onChange={(e) => setBrushWidth(Number(e.target.value))}
+                      className="w-20 cursor-pointer accent-primary ml-1"
+                      title="滑动调节画笔粗细"
+                    />
+                    <span className="font-mono text-xs w-7">{brushWidth}px</span>
+
+                    {/* Circle preview */}
+                    <div
+                      className="flex items-center justify-center w-6 h-6 rounded bg-background/50 border border-border/60"
+                      title={`当前画笔粗细: ${brushWidth}px`}
+                    >
+                      <span
+                        className="rounded-full bg-foreground inline-block"
+                        style={{
+                          width: Math.min(20, Math.max(3, brushWidth / 2)),
+                          height: Math.min(20, Math.max(3, brushWidth / 2)),
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
                   <Button
                     size="sm"
@@ -1545,6 +2033,10 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                       onMouseDown={handleMouseDown}
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
+                      onMouseLeave={() => {
+                        setCursorPos(null);
+                        requestAnimationFrame(drawOverlay);
+                      }}
                       className={`absolute inset-0 z-10 ${
                         previewMode ? 'cursor-default' : 'cursor-crosshair'
                       }`}
@@ -1581,11 +2073,17 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
               {/* Interaction Hint */}
               <div className="flex flex-wrap items-center justify-between text-[11px] text-muted-foreground px-2 gap-2">
                 <div className="flex items-center gap-2">
-                  <span>💡 提示：按住鼠标左键拖拽可绘制脱敏选区，拖拽边缘手柄调整尺寸或拖动移动。</span>
+                  <span>
+                    {activeTool === 'brush'
+                      ? '💡 提示：按住鼠标左键可直接在 PDF 上自由涂抹遮盖，松开鼠标完成绘制。'
+                      : '💡 提示：按住鼠标左键拖拽可绘制脱敏选区，拖拽边缘手柄调整尺寸或拖动移动。'}
+                  </span>
                   <span className="hidden sm:inline-block text-border">|</span>
                   <span className="hidden sm:inline">快捷键：<kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">Del</kbd> 删除 / <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">Ctrl+Z</kbd> 撤销 / <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">PgUp/PgDn</kbd> 翻页</span>
                 </div>
-                <span className="font-medium">当前模式：{previewMode ? '真实脱敏预览' : '选区标定编辑'}</span>
+                <span className="font-medium">
+                  当前模式：{previewMode ? '真实脱敏预览' : activeTool === 'brush' ? '自由画笔涂抹' : '选区标定编辑'}
+                </span>
               </div>
             </div>
           </div>
