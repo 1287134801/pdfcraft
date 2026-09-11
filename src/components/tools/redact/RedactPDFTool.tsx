@@ -1369,12 +1369,13 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
       {file && (
         <div className="space-y-4">
           {/* Top Control Bar */}
-          <Card className="p-4 bg-card border border-border rounded-xl shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Left: Tool Selection & Styles */}
-              <div className="flex flex-wrap items-center gap-2">
+          <Card className="p-3 sm:p-3.5 bg-card border border-border rounded-xl shadow-sm">
+            {/* ROW 1: Tool Mode, Redaction Style & Main Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Left: Tools & Styles */}
+              <div className="flex flex-wrap items-center gap-2.5">
                 {/* Tool Selector: Brush vs Rect */}
-                <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
+                <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/80">
                   <Button
                     size="sm"
                     variant={activeTool === 'brush' ? 'primary' : 'ghost'}
@@ -1390,75 +1391,24 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                     variant={activeTool === 'rect' ? 'primary' : 'ghost'}
                     onClick={() => setActiveTool('rect')}
                     className="gap-1.5 text-xs h-8 font-medium"
-                    title="矩形框选模式"
+                    title="矩形选区框选模式"
                   >
                     <Square className="w-3.5 h-3.5" />
                     矩形选区
                   </Button>
                 </div>
 
-                {/* Brush Thickness Controls (Shown when in Brush mode) */}
-                {activeTool === 'brush' && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-lg border border-border text-xs">
-                    <span className="text-muted-foreground whitespace-nowrap font-medium">粗细:</span>
-                    <div className="flex items-center gap-1">
-                      {[
-                        { label: '细', size: 8 },
-                        { label: '中', size: 16 },
-                        { label: '粗', size: 28 },
-                        { label: '特粗', size: 44 },
-                      ].map((preset) => (
-                        <button
-                          key={preset.size}
-                          type="button"
-                          onClick={() => setBrushWidth(preset.size)}
-                          className={`px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                            brushWidth === preset.size
-                              ? 'bg-primary text-primary-foreground font-bold shadow-xs'
-                              : 'bg-muted/60 hover:bg-muted text-foreground'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
+                <div className="hidden sm:block h-5 w-px bg-border/80" />
 
-                    <input
-                      type="range"
-                      min="4"
-                      max="64"
-                      step="2"
-                      value={brushWidth}
-                      onChange={(e) => setBrushWidth(Number(e.target.value))}
-                      className="w-20 cursor-pointer accent-primary ml-1"
-                      title="滑动调节画笔粗细"
-                    />
-                    <span className="font-mono text-xs w-7">{brushWidth}px</span>
-
-                    {/* Circle preview */}
-                    <div
-                      className="flex items-center justify-center w-6 h-6 rounded bg-background/50 border border-border/60"
-                      title={`当前画笔粗细: ${brushWidth}px`}
-                    >
-                      <span
-                        className="rounded-full bg-foreground inline-block"
-                        style={{
-                          width: Math.min(20, Math.max(3, brushWidth / 2)),
-                          height: Math.min(20, Math.max(3, brushWidth / 2)),
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border/80">
+                {/* Redaction Style Selector */}
+                <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/80">
                   <Button
                     size="sm"
                     variant={activeStyle === 'blackout' ? 'primary' : 'ghost'}
                     onClick={() => setActiveStyle('blackout')}
                     className="gap-1.5 text-xs h-8"
                   >
-                    <span className="w-3.5 h-3.5 bg-black rounded-sm border border-neutral-600 inline-block" />
+                    <span className="w-3 h-3 bg-black rounded-sm border border-neutral-600 inline-block" />
                     涂黑遮蔽
                   </Button>
                   <Button
@@ -1467,7 +1417,7 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                     onClick={() => setActiveStyle('whiteout')}
                     className="gap-1.5 text-xs h-8"
                   >
-                    <span className="w-3.5 h-3.5 bg-white rounded-sm border border-neutral-400 inline-block" />
+                    <span className="w-3 h-3 bg-white rounded-sm border border-neutral-400 inline-block" />
                     白条遮盖
                   </Button>
                   <Button
@@ -1489,62 +1439,9 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                     高斯模糊
                   </Button>
                 </div>
-
-                {/* Slider for Mosaic Block Size */}
-                {activeStyle === 'mosaic' && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-lg border border-border text-xs">
-                    <span className="text-muted-foreground whitespace-nowrap">颗粒度:</span>
-                    <input
-                      type="range"
-                      min="4"
-                      max="24"
-                      step="2"
-                      value={activeBlockSize}
-                      onChange={(e) => setActiveBlockSize(Number(e.target.value))}
-                      className="w-20 cursor-pointer accent-primary"
-                    />
-                    <span className="font-mono text-xs w-6">{activeBlockSize}px</span>
-                  </div>
-                )}
-
-                {/* Slider for Blur Radius */}
-                {activeStyle === 'blur' && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/40 rounded-lg border border-border text-xs">
-                    <span className="text-muted-foreground whitespace-nowrap">强度:</span>
-                    <input
-                      type="range"
-                      min="2"
-                      max="16"
-                      step="1"
-                      value={activeBlurRadius}
-                      onChange={(e) => setActiveBlurRadius(Number(e.target.value))}
-                      className="w-20 cursor-pointer accent-primary"
-                    />
-                    <span className="font-mono text-xs w-6">{activeBlurRadius}px</span>
-                  </div>
-                )}
-
-                {/* Draft Color Picker */}
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-muted/30 rounded-lg border border-border">
-                  <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground mr-1">框选标色:</span>
-                  {DRAFT_COLORS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setActiveDraftColor(c.id)}
-                      className={`w-5 h-5 rounded-full border transition-all ${
-                        activeDraftColor === c.id
-                          ? 'ring-2 ring-primary ring-offset-1 scale-110'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: c.stroke }}
-                      title={c.name}
-                    />
-                  ))}
-                </div>
               </div>
 
-              {/* Right: Preview, Undo/Redo, Clear */}
+              {/* Right: Preview, History & Clear */}
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
@@ -1556,13 +1453,13 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                   {previewMode ? '正在实时预览' : '预览脱敏效果'}
                 </Button>
 
-                <div className="flex items-center border-l border-border pl-2 gap-1">
+                <div className="flex items-center border-l border-border pl-1.5 gap-0.5">
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={handleUndo}
                     disabled={historyIndex <= 0}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                     title="撤销 (Ctrl+Z)"
                   >
                     <Undo2 className="w-4 h-4" />
@@ -1572,7 +1469,7 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                     variant="ghost"
                     onClick={handleRedo}
                     disabled={historyIndex >= history.length - 1}
-                    className="h-8 w-8 p-0"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                     title="重做 (Ctrl+Y)"
                   >
                     <Redo2 className="w-4 h-4" />
@@ -1584,7 +1481,7 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                     size="sm"
                     variant="outline"
                     onClick={handleRemoveSelected}
-                    className="gap-1 text-xs text-destructive hover:bg-destructive/10 h-8"
+                    className="gap-1 text-xs text-destructive hover:bg-destructive/10 h-8 border-destructive/30"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     删除选中
@@ -1596,10 +1493,141 @@ export function RedactPDFTool({ className = '' }: RedactPDFToolProps) {
                   variant="ghost"
                   onClick={handleClearCurrentPage}
                   disabled={(redactions[currentPage] || []).length === 0}
-                  className="text-xs text-muted-foreground h-8"
+                  className="text-xs text-muted-foreground hover:text-foreground h-8"
                 >
                   清空本页
                 </Button>
+              </div>
+            </div>
+
+            {/* Subtle Divider */}
+            <div className="border-t border-border/60 my-2.5" />
+
+            {/* ROW 2: Contextual Parameters & Draft Color Picker */}
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+              {/* Left: Dynamic Parameter Controls */}
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Brush Thickness Controls (when in Brush mode) */}
+                {activeTool === 'brush' && (
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-muted-foreground font-medium whitespace-nowrap">画笔粗细:</span>
+                    <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/70">
+                      {[
+                        { label: '细', size: 8 },
+                        { label: '中', size: 16 },
+                        { label: '粗', size: 28 },
+                        { label: '特粗', size: 44 },
+                      ].map((preset) => (
+                        <button
+                          key={preset.size}
+                          type="button"
+                          onClick={() => setBrushWidth(preset.size)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                            brushWidth === preset.size
+                              ? 'bg-background text-foreground shadow-xs font-bold'
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="range"
+                        min="4"
+                        max="64"
+                        step="2"
+                        value={brushWidth}
+                        onChange={(e) => setBrushWidth(Number(e.target.value))}
+                        className="w-24 cursor-pointer accent-primary"
+                        title="滑动调节画笔粗细"
+                      />
+                      <span className="font-mono text-xs font-semibold w-8 text-foreground">{brushWidth}px</span>
+
+                      {/* Circle Preview */}
+                      <div
+                        className="flex items-center justify-center w-5 h-5 rounded bg-muted/80 border border-border/80"
+                        title={`当前画笔粗细: ${brushWidth}px`}
+                      >
+                        <span
+                          className="rounded-full bg-foreground inline-block"
+                          style={{
+                            width: Math.min(16, Math.max(3, brushWidth / 2.5)),
+                            height: Math.min(16, Math.max(3, brushWidth / 2.5)),
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mosaic Block Size Slider */}
+                {activeStyle === 'mosaic' && (
+                  <div className={`flex items-center gap-2 ${activeTool === 'brush' ? 'pl-3 border-l border-border/70' : ''}`}>
+                    <span className="text-muted-foreground font-medium whitespace-nowrap">马赛克颗粒:</span>
+                    <input
+                      type="range"
+                      min="4"
+                      max="24"
+                      step="2"
+                      value={activeBlockSize}
+                      onChange={(e) => setActiveBlockSize(Number(e.target.value))}
+                      className="w-20 cursor-pointer accent-primary"
+                    />
+                    <span className="font-mono text-xs font-semibold w-7 text-foreground">{activeBlockSize}px</span>
+                  </div>
+                )}
+
+                {/* Blur Radius Slider */}
+                {activeStyle === 'blur' && (
+                  <div className={`flex items-center gap-2 ${activeTool === 'brush' ? 'pl-3 border-l border-border/70' : ''}`}>
+                    <span className="text-muted-foreground font-medium whitespace-nowrap">模糊强度:</span>
+                    <input
+                      type="range"
+                      min="2"
+                      max="16"
+                      step="1"
+                      value={activeBlurRadius}
+                      onChange={(e) => setActiveBlurRadius(Number(e.target.value))}
+                      className="w-20 cursor-pointer accent-primary"
+                    />
+                    <span className="font-mono text-xs font-semibold w-7 text-foreground">{activeBlurRadius}px</span>
+                  </div>
+                )}
+
+                {/* Hint for Rect mode without sliders */}
+                {activeTool === 'rect' && activeStyle !== 'mosaic' && activeStyle !== 'blur' && (
+                  <span className="text-muted-foreground text-[11px] flex items-center gap-1">
+                    <span className="text-primary font-bold">💡</span>
+                    <span>按住鼠标左键在页面拖拽可绘制矩形遮盖区，点击选区可拖动或通过手柄缩放。</span>
+                  </span>
+                )}
+              </div>
+
+              {/* Right: Draft Color Picker */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Palette className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>框选标色:</span>
+                </span>
+                <div className="flex items-center gap-1 bg-muted/40 px-2 py-1 rounded-lg border border-border/60">
+                  {DRAFT_COLORS.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setActiveDraftColor(c.id)}
+                      className={`w-4 h-4 rounded-full border transition-all ${
+                        activeDraftColor === c.id
+                          ? 'ring-2 ring-primary ring-offset-1 scale-110 shadow-xs'
+                          : 'opacity-70 hover:opacity-100 hover:scale-110'
+                      }`}
+                      style={{ backgroundColor: c.stroke }}
+                      title={`${c.name} 标色`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </Card>
