@@ -227,19 +227,13 @@ const nextConfig = {
         ],
       },
       {
-        // HTML pages - short cache with revalidation
+        // Global security & caching headers for all routes
         source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=0, must-revalidate',
           },
-        ],
-      },
-      {
-        // Security headers for all routes
-        source: '/:path*',
-        headers: [
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',

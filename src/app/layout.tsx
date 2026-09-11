@@ -37,6 +37,11 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          src={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/coi-serviceworker.js`}
+          data-coi="true"
+          async
+        />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
