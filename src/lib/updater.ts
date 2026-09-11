@@ -327,12 +327,17 @@ export async function checkUpdate(force = false): Promise<UpdateCheckResult> {
       matchedAssets,
     };
   } catch (error) {
+    const rawError = error instanceof Error ? error.message : String(error);
+    let friendlyError = rawError;
+    if (rawError.includes('Failed to fetch') || rawError.includes('abort') || rawError.includes('NetworkError')) {
+      friendlyError = `${rawError}: 无法连接至更新服务器（请检查网络连接、代理或客户端安全策略）`;
+    }
     return {
       hasUpdate: false,
       currentVersion,
       latestVersion: currentVersion,
       matchedAssets: { all: [] },
-      error: error instanceof Error ? error.message : String(error),
+      error: friendlyError,
     };
   }
 }

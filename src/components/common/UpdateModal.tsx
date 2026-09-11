@@ -16,7 +16,7 @@ import {
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { UpdateCheckResult, ReleaseAsset } from '@/types/updater';
-import { ignoreVersion } from '@/lib/updater';
+import { ignoreVersion, GITHUB_REPO } from '@/lib/updater';
 
 export interface UpdateModalProps {
   isOpen: boolean;
@@ -126,10 +126,25 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                 {result.error}
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              {getMsg('retry', 'Retry')}
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <Button variant="outline" size="sm" onClick={onRetry} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                {getMsg('retry', 'Retry')}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.open(`https://github.com/${GITHUB_REPO}/releases`, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>{getMsg('viewOnGithub', 'View on GitHub')}</span>
+              </Button>
+            </div>
           </div>
         )}
 
