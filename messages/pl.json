@@ -1459,7 +1459,10 @@
     "downloadZip": "Pobierz jako ZIP",
     "downloadIndividually": "Pobierz pliki pojedynczo",
     "flowControl": "Sterowanie przepływem",
-    "conditionGateway": "Bramka warunkowa"
+    "conditionGateway": "Bramka warunkowa",
+    "downloadPdf": "Pobierz PDF",
+    "outputCategory": "Wyjście i Eksport",
+    "filenameLabel": "Nazwa pliku wyjściowego"
   },
   "tools": {
     "search": {
@@ -2616,7 +2619,18 @@
       "rangePlaceholder": "np. 1, 3, 5-10",
       "previewTitle": "Podgląd",
       "previewNote": "Wyświetlana jest tylko pierwsza strona, aby poprawić wydajność",
-      "previewGenerating": "Tworzenie podglądu..."
+      "previewGenerating": "Tworzenie podglądu...",
+      "flattenTitle": "Flatten Watermark",
+      "flattenDescription": "Rasterize pages into tamper-resistant images so watermarks cannot be removed or extracted",
+      "dragHint": "Drag watermark directly on preview or drag corners to resize",
+      "posTop": "Top",
+      "posBottom": "Bottom",
+      "posLeft": "Left",
+      "posRight": "Right",
+      "scale": "Image Scale",
+      "page": "Page",
+      "of": "of",
+      "pages": "pages"
     },
     "headerFooter": {
       "uploadLabel": "Prześlij plik PDF",

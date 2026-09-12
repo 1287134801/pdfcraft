@@ -1444,7 +1444,10 @@
     "downloadZip": "ZIPとしてダウンロード",
     "downloadIndividually": "ファイルを個別にダウンロード",
     "flowControl": "フロー制御",
-    "conditionGateway": "条件分岐"
+    "conditionGateway": "条件分岐",
+    "downloadPdf": "PDFをダウンロード",
+    "outputCategory": "出力とエクスポート",
+    "filenameLabel": "出力ファイル名"
   },
   "tools": {
     "search": {
@@ -2593,7 +2596,18 @@
       "rangePlaceholder": "例: 1, 3, 5-10",
       "previewTitle": "プレビュー",
       "previewNote": "プレビュー生成速度向上のため最初のページのみ表示しています",
-      "previewGenerating": "プレビューを生成中..."
+      "previewGenerating": "プレビューを生成中...",
+      "flattenTitle": "Flatten Watermark",
+      "flattenDescription": "Rasterize pages into tamper-resistant images so watermarks cannot be removed or extracted",
+      "dragHint": "Drag watermark directly on preview or drag corners to resize",
+      "posTop": "Top",
+      "posBottom": "Bottom",
+      "posLeft": "Left",
+      "posRight": "Right",
+      "scale": "Image Scale",
+      "page": "Page",
+      "of": "of",
+      "pages": "pages"
     },
     "headerFooter": {
       "uploadLabel": "PDFファイルをアップロード",
