@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { BatchProcessingPanel } from '@/components/common/BatchProcessingPanel';
 import { excelToPDF } from '@/lib/pdf/processors/excel-to-pdf';
+import { isCrossOriginIsolated } from '@/lib/utils/cross-origin-isolated';
 import type { UploadedFile, ProcessOutput } from '@/types/pdf';
 
 function generateId(): string {
@@ -40,6 +41,16 @@ export function ExcelToPDFTool({ className = '' }: ExcelToPDFToolProps) {
         let cancelled = false;
         (async () => {
             try {
+                if (!isCrossOriginIsolated()) {
+                    if (cancelled) return;
+                    setPreloadStatus('complete');
+                    setPreloadProgress(100);
+                    setPreloadMessage(
+                        'Compatibility mode: .xlsx and .csv convert using Python engine without server isolation headers.'
+                    );
+                    return;
+                }
+
                 const { getLibreOfficeConverter } = await import('@/lib/libreoffice');
                 if (cancelled) return;
                 const converter = getLibreOfficeConverter();
@@ -65,8 +76,10 @@ export function ExcelToPDFTool({ className = '' }: ExcelToPDFToolProps) {
                 setPreloadMessage('Conversion engine ready!');
             } catch (err) {
                 if (cancelled) return;
-                setPreloadStatus('error');
-                setPreloadMessage(err instanceof Error ? err.message : 'Failed to preload conversion engine.');
+                console.warn('[ExcelToPDF] LibreOffice WASM preload failed, switching to Compatibility Mode:', err);
+                setPreloadStatus('complete');
+                setPreloadProgress(100);
+                setPreloadMessage('Conversion engine ready (Compatibility Mode: .xlsx/.csv supported).');
             }
         })();
         return () => { cancelled = true; };
