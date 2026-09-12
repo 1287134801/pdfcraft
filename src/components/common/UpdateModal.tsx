@@ -81,9 +81,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
     }
   };
 
-  const handleDownload = (asset: ReleaseAsset) => {
+  const handleDownload = (asset: ReleaseAsset, useMirror = false) => {
     if (typeof window !== 'undefined') {
-      window.open(asset.browserDownloadUrl, '_blank', 'noopener,noreferrer');
+      const url = useMirror && asset.mirrorDownloadUrl ? asset.mirrorDownloadUrl : asset.browserDownloadUrl;
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -244,6 +245,19 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                     {formatFileSize(result.matchedAssets.secondary.size)}
                   </span>
                 </Button>
+              )}
+
+              {/* Fast mirror option */}
+              {result.matchedAssets.primary?.mirrorDownloadUrl && (
+                <div className="flex items-center justify-center pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(result.matchedAssets.primary!, true)}
+                    className="text-[11px] text-[hsl(var(--color-primary))] hover:underline inline-flex items-center gap-1 font-medium py-1 px-2 rounded hover:bg-[hsl(var(--color-primary))/0.08] transition-colors"
+                  >
+                    <span>⚡ 国内高速镜像通道下载</span>
+                  </button>
+                </div>
               )}
 
               {/* Toggle all assets */}
