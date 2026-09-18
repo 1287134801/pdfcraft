@@ -285,6 +285,8 @@ export function ToolSidebar({
     };
 
     const handleDragStart = (e: React.DragEvent, tool: typeof tools[0]) => {
+        // Cancel pointer fallback drag since native HTML5 drag-and-drop has taken over
+        pointerDragRef.current = null;
         onDragStart(e, createNodeData(tool));
     };
 

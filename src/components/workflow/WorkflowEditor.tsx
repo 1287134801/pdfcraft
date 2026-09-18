@@ -380,6 +380,27 @@ function WorkflowEditorContent() {
     const addToolNodeAtClientPosition = useCallback((nodeData: ToolNodeData, clientX: number, clientY: number) => {
         if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
+        // Strict deduplication guard (e.g. dual triggers from pointerup + native onDrop)
+        const lastDrop = lastToolDropRef.current;
+        const now = Date.now();
+        if (
+            lastDrop &&
+            lastDrop.toolId === nodeData.toolId &&
+            now - lastDrop.time < 500 &&
+            Math.abs(lastDrop.clientX - clientX) < 80 &&
+            Math.abs(lastDrop.clientY - clientY) < 80
+        ) {
+            logger.log('[Workflow] Deduplicated double drop for tool:', nodeData.toolId);
+            return;
+        }
+
+        lastToolDropRef.current = {
+            toolId: nodeData.toolId,
+            clientX,
+            clientY,
+            time: now,
+        };
+
         const position = reactFlowInstance.screenToFlowPosition({
             x: clientX,
             y: clientY,
@@ -396,17 +417,12 @@ function WorkflowEditorContent() {
         };
 
         setNodes((nds) => nds.concat(newNode));
-        lastToolDropRef.current = {
-            toolId: nodeData.toolId,
-            clientX,
-            clientY,
-            time: Date.now(),
-        };
     }, [reactFlowInstance, setNodes]);
 
     const onDrop = useCallback(
         (event: React.DragEvent) => {
             event.preventDefault();
+            event.stopPropagation();
 
             if (!reactFlowWrapper.current || !reactFlowInstance) return;
 
@@ -1204,8 +1220,6 @@ function WorkflowEditorContent() {
                 <div 
                     className="flex-1 relative" 
                     ref={reactFlowWrapper}
-                    onDragOver={onDragOver}
-                    onDrop={onDrop}
                 >
                     {/* Undo/Redo Floating Island */}
                     <div className="absolute top-3 left-3 z-10 flex items-center gap-1 p-1 rounded-lg bg-[hsl(var(--color-background)/0.9)] backdrop-blur-md border border-[hsl(var(--color-border))] shadow-md">
