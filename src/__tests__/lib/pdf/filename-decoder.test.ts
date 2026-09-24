@@ -161,10 +161,29 @@ describe('PDF Filename Decoder', () => {
 
     it('handles empty or invalid inputs gracefully', () => {
       expect(decodePdfFilename('')).toBe('');
-      // @ts-expect-error testing invalid type
       expect(decodePdfFilename(null)).toBe('');
-      // @ts-expect-error testing invalid type
       expect(decodePdfFilename(undefined)).toBe('');
     });
   });
+
+  describe('js_of_ocaml Internal Objects', () => {
+    it('correctly handles js_of_ocaml string objects with .c property', () => {
+      const ocamlObj = {
+        t: 0,
+        c: toLatin1ByteString('程佑附件.docx'),
+        l: 17,
+      };
+      expect(decodePdfFilename(ocamlObj)).toBe('程佑附件.docx');
+    });
+
+    it('correctly handles objects with custom toString() implementation', () => {
+      const customObj = {
+        toString() {
+          return toLatin1ByteString('项目验收清单.pdf');
+        },
+      };
+      expect(decodePdfFilename(customObj)).toBe('项目验收清单.pdf');
+    });
+  });
 });
+

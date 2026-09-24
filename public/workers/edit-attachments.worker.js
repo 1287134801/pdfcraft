@@ -18,6 +18,19 @@ const PDF_DOC_ENCODING_MAP = {
   0x9C: 0x0153, 0x9D: 0x0161, 0x9E: 0x017E, 0xA0: 0x20AC,
 };
 
+function extractRawString(raw) {
+  if (raw == null) return '';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') {
+    if (typeof raw.c === 'string') return raw.c;
+    if (typeof raw.toString === 'function') {
+      const str = raw.toString();
+      if (str && str !== '[object Object]') return str;
+    }
+  }
+  return String(raw);
+}
+
 function cleanFilename(name) {
   if (!name) return '';
   let cleaned = name.replace(/[\0\r\n]/g, '').trim();
@@ -40,9 +53,10 @@ function decodePdfDocEncoding(bytes) {
 }
 
 function decodePdfFilename(raw) {
-  if (!raw || typeof raw !== 'string') return '';
+  if (raw == null) return '';
 
-  let str = raw.trim();
+  let str = extractRawString(raw).trim();
+  if (!str) return '';
 
   // 1. Unescape PDF octal string escapes if present (e.g. \347\250\213)
   if (/\\([0-7]{1,3})/.test(str)) {
@@ -157,7 +171,8 @@ function getAttachmentsFromPDFInWorker(fileBuffer, fileName) {
     for (let i = 0; i < attachmentCount; i++) {
       try {
         const rawName = coherentpdf.getAttachmentName(i);
-        const name = decodePdfFilename(rawName) || `attachment_${i + 1}`;
+        const rawStr = extractRawString(rawName);
+        const name = decodePdfFilename(rawStr) || `attachment_${i + 1}`;
         const page = coherentpdf.getAttachmentPage(i);
         const attachmentData = coherentpdf.getAttachmentData(i);
 
@@ -219,7 +234,8 @@ function editAttachmentsInPDFInWorker(fileBuffer, fileName, attachmentsToRemove)
       for (let i = 0; i < attachmentCount; i++) {
         if (!attachmentsToRemove.includes(i)) {
           const rawName = coherentpdf.getAttachmentName(i);
-          const name = decodePdfFilename(rawName) || `attachment_${i + 1}`;
+          const rawStr = extractRawString(rawName);
+          const name = decodePdfFilename(rawStr) || `attachment_${i + 1}`;
           const page = coherentpdf.getAttachmentPage(i);
           const data = coherentpdf.getAttachmentData(i);
 
