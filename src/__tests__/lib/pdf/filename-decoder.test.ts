@@ -55,6 +55,24 @@ describe('PDF Filename Decoder', () => {
       const germanMojibake = toLatin1ByteString(german);
       expect(decodePdfFilename(germanMojibake)).toBe(german);
     });
+
+    it('recovers slightly corrupted UTF-8 byte streams via loose UTF-8 without falling back to Latin-1', () => {
+      // Append a trailing incomplete byte (0x80) to a valid UTF-8 string
+      const original = '程佑附件.pdf';
+      const bytes = new TextEncoder().encode(original);
+      const corruptedBytes = new Uint8Array(bytes.length + 1);
+      corruptedBytes.set(bytes);
+      corruptedBytes[bytes.length] = 0x80; // Incomplete UTF-8 continuation byte
+
+      let corruptedStr = '';
+      for (let i = 0; i < corruptedBytes.length; i++) {
+        corruptedStr += String.fromCharCode(corruptedBytes[i]);
+      }
+
+      const decoded = decodePdfFilename(corruptedStr);
+      // Chinese characters should still be recovered, NOT ruined into 'ç¨‹ä½‘...'
+      expect(decoded).toContain('程佑附件.pdf');
+    });
   });
 
   describe('Preservation of Valid Strings', () => {

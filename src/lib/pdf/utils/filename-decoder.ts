@@ -186,26 +186,38 @@ export function decodePdfFilename(raw: unknown): string {
     const hasHighByte = bytes.some(b => b >= 128);
 
     if (hasHighByte) {
-      // Primary: Try UTF-8 (strict) - handles standard multi-byte UTF-8 mojibake
+      // Priority 1: Strict UTF-8 decoding
       try {
         const decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
         return cleanFilename(decoded);
       } catch {
-        // Not valid UTF-8
+        // Not valid strict UTF-8
       }
 
-      // Secondary: Try GB18030 / GBK (strict) - handles Chinese PDFs encoded in GBK
+      // Priority 2: Loose UTF-8 decoding (tolerates minor byte corruption or non-strict sequences)
+      try {
+        const looseDecoded = new TextDecoder('utf-8').decode(bytes);
+        const repCount = (looseDecoded.match(/\uFFFD/g) || []).length;
+        if (repCount <= 1 || repCount / looseDecoded.length <= 0.15) {
+          return cleanFilename(looseDecoded.replace(/\uFFFD/g, ''));
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Priority 3: GB18030 / GBK fallback for localized Chinese PDFs
       try {
         const decoded = new TextDecoder('gb18030', { fatal: true }).decode(bytes);
         if (decoded && !decoded.includes('\uFFFD')) {
           return cleanFilename(decoded);
         }
       } catch {
-        // Not valid GBK
+        // Fallback
       }
 
-      // Tertiary: Fallback to PDFDocEncoding mapping
-      return cleanFilename(decodePdfDocEncoding(bytes));
+      // Priority 4: Safe fallback - avoid damaging Latin-1 / PDFDocEncoding conversion on multi-byte sequences!
+      // Return the cleaned original string rather than a destructive Mojibake mapping
+      return cleanFilename(str);
     }
   }
 
